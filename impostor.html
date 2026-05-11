@@ -1,0 +1,1821 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jogo do Impostor</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Exo+2:wght@300;400;600;700;900&family=Space+Mono:wght@400;700&display=swap');
+
+        :root {
+            --blue: #5B6BAF;
+            --blue-dark: #4a5a9e;
+            --blue-light: #8b9fd4;
+            --rose: #D46475;
+            --rose-dark: #b8505f;
+            --rose-light: #f09aaa;
+            --bg: #0d0e14;
+            --surface: rgba(91,107,175,0.06);
+            --border-blue: rgba(91,107,175,0.35);
+            --border-rose: rgba(212,100,117,0.35);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+        }
+
+        body {
+            font-family: 'Exo 2', sans-serif;
+            background: var(--bg);
+            color: #fff;
+            font-size: 16px;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(40px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes bounce {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-20px);
+            }
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 16px rgba(212,100,117,0.4); }
+            50% { box-shadow: 0 0 28px rgba(212,100,117,0.7); }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-8px); }
+        }
+
+        .animate-fade-in {
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        .animate-slide-in {
+            animation: slideInRight 0.6s ease-out;
+        }
+
+        .animate-bounce {
+            animation: bounce 2s infinite;
+        }
+
+        .glow {
+            animation: pulse-glow 2s ease-in-out infinite;
+        }
+
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #D46475;
+            border-radius: 5px;
+        }
+
+        .screen {
+            display: none;
+            min-height: 100vh;
+            width: 100%;
+        }
+
+        .screen.active {
+            display: flex;
+        }
+
+        .screen {
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: radial-gradient(ellipse at 20% 20%, rgba(91,107,175,0.15) 0%, transparent 50%),
+                        radial-gradient(ellipse at 80% 80%, rgba(212,100,117,0.12) 0%, transparent 50%),
+                        #0d0e14;
+            position: relative;
+            overflow: hidden;
+            padding: 1rem;
+        }
+
+        .screen::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image: 
+                radial-gradient(circle at 1px 1px, rgba(255,255,255,0.07) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none;
+        }
+
+        .content {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            max-height: 100%;
+            overflow-y: auto;
+        }
+
+        .container {
+            max-width: 56rem;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+
+        .title {
+            font-size: clamp(2.25rem, 10vw, 4.5rem);
+            font-weight: 900;
+            margin-bottom: 1.5rem;
+            text-align: center;
+            color: #D46475;
+            letter-spacing: -0.02em;
+        }
+
+        .subtitle {
+            font-size: 1.125rem;
+            color: #d1d5db;
+            text-align: center;
+            max-width: 42rem;
+            margin-bottom: 3rem;
+            font-weight: 300;
+            line-height: 1.625;
+        }
+
+        .btn-primary {
+            background: #D46475;
+            color: #ffffff;
+            padding: 1rem 2.5rem;
+            font-size: 1.25rem;
+            font-weight: 700;
+            border: none;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 6px 20px rgba(212,100,117,0.35);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-family: 'Exo 2', sans-serif;
+            letter-spacing: 0.02em;
+        }
+
+        .btn-primary:hover {
+            transform: scale(1.05) translateY(-2px);
+            box-shadow: 0 25px 50px rgba(69, 109, 255, 0.4), 0 10px 20px rgba(212,100,117,0.3);
+        }
+
+        .btn-back {
+            background: rgba(91,107,175,0.15);
+            border: 1px solid rgba(91,107,175,0.4);
+            color: #ffffff;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+            font-weight: 700;
+            position: absolute;
+            top: 2rem;
+            left: 2rem;
+            z-index: 20;
+            font-family: 'Exo 2', sans-serif;
+        }
+
+        .btn-back:hover {
+            background: rgba(91,107,175,0.3);
+            border-color: rgba(212,100,117,0.5);
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(69, 109, 255, 0.25);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            backdrop-filter: blur(8px);
+            transition: all 0.3s ease;
+            animation: slideInRight 0.6s ease-out;
+            cursor: pointer;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+
+        .card:nth-child(even) {
+            border-color: rgba(212, 100, 117, 0.25);
+        }
+
+        .card:nth-child(2) {
+            animation-delay: 0.1s;
+        }
+
+        .card:nth-child(3) {
+            animation-delay: 0.2s;
+        }
+
+        .card:nth-child(4) {
+            animation-delay: 0.3s;
+        }
+
+        .card:nth-child(5) {
+            animation-delay: 0.4s;
+        }
+
+        .card:hover {
+            border-color: rgba(212,100,117,0.8);
+            background: rgba(91,107,175,0.12);
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(212,100,117,0.15);
+        }
+
+        .card-emoji {
+            font-size: 2.5rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .card-title {
+            font-weight: 700;
+            font-size: 1.125rem;
+            margin-bottom: 0.5rem;
+            color: #ffffff;
+        }
+
+        .card-count {
+            color: #9ca3af;
+            font-size: 0.875rem;
+        }
+
+        .form-section {
+            background: rgba(255, 255, 255, 0.04);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(69, 109, 255, 0.2);
+            border-left: 3px solid #D46475;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        }
+
+        .form-label {
+            display: block;
+            font-size: 1.125rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .radio-group {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .radio-option {
+            display: flex;
+            align-items: center;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(69, 109, 255, 0.3);
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: #e5e7eb;
+        }
+
+        .radio-option:hover {
+            background: rgba(69, 109, 255, 0.1);
+            border-color: rgba(69, 109, 255, 0.8);
+            color: #e5e7eb;
+        }
+
+        .radio-option.active {
+            background: rgba(91,107,175,0.18);
+            border-color: #5B6BAF;
+            box-shadow: 0 0 0 1px rgba(212,100,117,0.2);
+            color: #e5e7eb;
+        }
+
+        .radio-input {
+            width: 20px;
+            height: 20px;
+            margin-right: 1rem;
+            cursor: pointer;
+            accent-color: #D46475;
+        }
+
+        .radio-label {
+            flex: 1;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .player-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .player-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            border: 1px solid rgba(69, 109, 255, 0.2);
+        }
+
+        .player-name {
+            font-weight: 600;
+        }
+
+        .btn-delete {
+            background: none;
+            border: none;
+            color: #f87171;
+            cursor: pointer;
+            padding: 0.5rem;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+        }
+
+        .btn-delete:hover {
+            background: rgba(239, 68, 68, 0.2);
+            border-radius: 0.25rem;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .text-input {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(69, 109, 255, 0.5);
+            border-radius: 0.5rem;
+            color: #ffffff;
+            font-size: 1rem;
+        }
+
+        .text-input::placeholder {
+            color: #9ca3af;
+        }
+
+        .text-input:focus {
+            outline: none;
+            border-color: #D46475;
+            box-shadow: 0 0 0 2px rgba(212, 100, 117, 0.2);
+        }
+
+        .btn-add {
+            background: #D46475;
+            color: #ffffff;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-weight: 700;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-family: 'Exo 2', sans-serif;
+        }
+
+        .btn-add:hover {
+            opacity: 0.85;
+            transform: scale(1.05);
+        }
+
+        .btn-start {
+            width: 100%;
+            padding: 1rem 1.5rem;
+            background: #D46475;
+            color: #ffffff;
+            border: none;
+            border-radius: 0.75rem;
+            font-weight: 700;
+            font-size: 1.125rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            box-shadow: 0 6px 18px rgba(212,100,117,0.3);
+            font-family: 'Exo 2', sans-serif;
+            letter-spacing: 0.02em;
+        }
+
+        .btn-start:hover:not(:disabled) {
+            transform: scale(1.02) translateY(-2px);
+            box-shadow: 0 25px 50px rgba(69, 109, 255, 0.35), 0 10px 20px rgba(212,100,117,0.25);
+        }
+
+        .btn-start:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Tela de Revelação */
+        .reveal-screen {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .reveal-card {
+            background: #1a1e2e;
+            border-radius: 1.5rem;
+            padding: 3rem 2rem;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+            text-align: center;
+            max-width: 500px;
+            animation: fadeIn 0.6s ease-out;
+            border: 1px solid rgba(255,255,255,0.15);
+        }
+
+        .reveal-label {
+            font-size: 1rem;
+            color: #dbeafe;
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+
+        .player-name-display {
+            font-size: 2.5rem;
+            font-weight: 900;
+            color: #ffffff;
+            margin-bottom: 2rem;
+        }
+
+        .reveal-content {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 2rem;
+            border-radius: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .reveal-title {
+            font-size: 1rem;
+            color: #dbeafe;
+            margin-bottom: 1rem;
+        }
+
+        .word-display {
+            font-size: 2rem;
+            font-weight: 900;
+            color: #e8a87c;
+            margin-bottom: 1rem;
+        }
+
+        .hint-display {
+            font-size: 0.95rem;
+            color: #e5e7eb;
+            font-style: italic;
+        }
+
+        .question-display {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #dbeafe;
+            line-height: 1.6;
+        }
+
+        .impostor-warning {
+            background: rgba(212, 100, 117, 0.2);
+            border: 2px solid #D46475;
+            color: #f09aaa;
+            padding: 1rem;
+            border-radius: 0.75rem;
+            margin-bottom: 2rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+        }
+
+        .btn-continue {
+            background: rgba(255,255,255,0.95);
+            color: #1a1e2e;
+            padding: 0.75rem 2rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+            font-family: 'Exo 2', sans-serif;
+        }
+
+        .btn-continue:hover {
+            background: #ffffff;
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+
+        /* Game Screen */
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding: 1.25rem;
+            background: rgba(91,107,175,0.1);
+            border: 1px solid rgba(91,107,175,0.25);
+            border-radius: 1rem;
+            backdrop-filter: blur(8px);
+        }
+
+        .header-item {
+            text-align: center;
+        }
+
+        .header-label {
+            font-size: 0.875rem;
+            color: #9ca3af;
+        }
+
+        .header-value {
+            font-size: 2rem;
+            font-weight: 900;
+            color: #D46475;
+        }
+
+        .player-turn-card {
+            background: rgba(91,107,175,0.12);
+            border: 1px solid rgba(91,107,175,0.4);
+            border-radius: 1.5rem;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255,255,255,0.1);
+            text-align: center;
+        }
+
+        .turn-label {
+            font-size: 1.125rem;
+            color: #dbeafe;
+            margin-bottom: 0.5rem;
+        }
+
+        .turn-name {
+            font-size: 2.5rem;
+            font-weight: 900;
+            color: #ffffff;
+        }
+
+        .players-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 0.75rem;
+            margin-bottom: 2rem;
+        }
+
+        .player-card {
+            padding: 1rem;
+            border-radius: 0.75rem;
+            border: 2px solid;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(69, 109, 255, 0.2);
+            color: #ffffff;
+            font-weight: 700;
+        }
+
+        .player-card.active {
+            background: #5B6BAF;
+            border-color: rgba(255,255,255,0.3);
+            box-shadow: 0 8px 20px rgba(91,107,175,0.4);
+        }
+
+        .player-card:hover:not(.active) {
+            border-color: rgba(69, 109, 255, 0.5);
+        }
+
+        .voting-section {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(69, 109, 255, 0.3);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .section-title {
+            font-size: 1.125rem;
+            font-weight: 700;
+            color: #d1d5db;
+            margin-bottom: 1rem;
+        }
+
+        .voting-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .vote-btn {
+            padding: 0.75rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            border-radius: 0.5rem;
+            color: #ffffff;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .vote-btn.selected {
+            background: #D46475;
+            color: #ffffff;
+            box-shadow: 0 10px 20px rgba(212, 100, 117, 0.4);
+        }
+
+        .vote-btn:hover:not(.selected) {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .btn-action {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            border: none;
+            border-radius: 0.5rem;
+            color: #ffffff;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-next {
+            background: #5B6BAF;
+            font-family: 'Exo 2', sans-serif;
+        }
+
+        .btn-next:hover:not(:disabled) {
+            background: #4a5a9e;
+            transform: translateY(-1px);
+        }
+
+        .btn-eliminate {
+            background: #D46475;
+            font-family: 'Exo 2', sans-serif;
+        }
+
+        .btn-eliminate:hover {
+            background: #b8505f;
+            transform: translateY(-1px);
+        }
+
+        .btn-next:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-finish {
+            width: 100%;
+            padding: 0.75rem 1.5rem;
+            background: #5B6BAF;
+            border: none;
+            border-radius: 0.75rem;
+            color: #ffffff;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Exo 2', sans-serif;
+        }
+
+        .btn-finish:hover {
+            transform: scale(1.02) translateY(-2px);
+            box-shadow: 0 10px 25px rgba(91,107,175,0.3);
+        }
+
+        .svg-icon {
+            width: 24px;
+            height: 24px;
+            display: inline-block;
+        }
+
+        .player-count {
+            margin-top: 1rem;
+            font-size: 0.875rem;
+            color: #9ca3af;
+        }
+
+        .player-count strong {
+            color: #D46475;
+            font-weight: 700;
+        }
+
+        @media (max-width: 768px) {
+            .voting-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .container {
+                padding: 1rem 0.5rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Menu Principal -->
+    <div id="menuScreen" class="screen active">
+        <div style="position:absolute;top:10%;left:10%;width:300px;height:300px;background:rgba(91,107,175,0.08);border-radius:50%;filter:blur(40px);pointer-events:none;animation:float 6s ease-in-out infinite;"></div>
+        <div style="position:absolute;bottom:15%;right:10%;width:250px;height:250px;background:rgba(212,100,117,0.08);border-radius:50%;filter:blur(40px);pointer-events:none;animation:float 8s ease-in-out infinite reverse;"></div>
+        <div class="content">
+            <div class="container" style="text-align: center; padding-top: 4rem;">
+                <div style="font-family:'Space Mono',monospace;font-size:0.75rem;letter-spacing:0.25em;color:#D46475;margin-bottom:1.5rem;opacity:0.8;text-transform:uppercase;">● Jogo de Dedução Social ●</div>
+                <h1 class="title">Jogo do Impostor</h1>
+                <p class="subtitle">
+                    Um jogo de dedução social onde alguém é o Impostor!
+                </p>
+                <button class="btn-primary glow" onclick="goToThemes()">
+                    <svg class="svg-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                        fill="currentColor">
+                        <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                    </svg>
+                    Começar Jogo
+                </button>
+                <div style="margin-top:3rem;display:flex;justify-content:center;gap:2rem;opacity:0.4;">
+                    <div style="width:8px;height:8px;border-radius:50%;background:#5B6BAF;animation:bounce 2s infinite;"></div>
+                    <div style="width:8px;height:8px;border-radius:50%;background:#D46475;animation:bounce 2s infinite 0.3s;"></div>
+                    <div style="width:8px;height:8px;border-radius:50%;background:#5B6BAF;animation:bounce 2s infinite 0.6s;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tela de Temas -->
+    <div id="themesScreen" class="screen">
+        <button class="btn-back" onclick="goToMenu()">← Voltar</button>
+        <div class="content">
+            <div class="container">
+                <h2 class="title">Escolha um Tema</h2>
+                <div class="grid-container" id="themesGrid"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tela de Modo de Jogo -->
+    <div id="modeScreen" class="screen">
+        <button class="btn-back" onclick="goToThemes()">← Voltar</button>
+        <div class="content">
+            <div class="container">
+                <h2 class="title">Escolha o Modo</h2>
+                <div class="form-section">
+                    <label class="form-label">Como o Impostor vai jogar?</label>
+                    <div class="radio-group">
+                        <label class="radio-option" onclick="selectMode('blind')">
+                            <input type="radio" name="mode" value="blind" class="radio-input" checked>
+                            <span class="radio-label">
+                                <strong>Modo Cego 🙈</strong><br>
+                                <span style="font-size: 0.85rem; color: #b3bdc9;">O impostor NÃO sabe que é impostor e
+                                    recebe uma palavra diferente</span>
+                            </span>
+                        </label>
+                        <label class="radio-option" onclick="selectMode('aware')">
+                            <input type="radio" name="mode" value="aware" class="radio-input">
+                            <span class="radio-label">
+                                <strong>Modo Consciente 🎭</strong><br>
+                                <span style="font-size: 0.85rem; color: #b3bdc9;">O impostor SABE que é impostor e
+                                    recebe uma dica para descobrir a palavra</span>
+                            </span>
+                        </label>
+                        <label class="radio-option" onclick="selectMode('question')">
+                            <input type="radio" name="mode" value="question" class="radio-input">
+                            <span class="radio-label">
+                                <strong>Modo Pergunta 🎤</strong><br>
+                                <span style="font-size: 0.85rem; color: #b3bdc9;">Respondem perguntas sobre o tema. O impostor recebe uma pergunta diferente</span>
+                            </span>
+                        </label>
+                    </div>
+                </div>
+                <button class="btn-start" onclick="goToSetup()">Continuar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tela de Setup -->
+    <div id="setupScreen" class="screen">
+        <button class="btn-back" onclick="goToMode()">← Voltar</button>
+        <div class="content">
+            <div class="container">
+                <h2 class="title">Configurar Jogo</h2>
+
+                <div class="form-section">
+                    <label class="form-label">Quantos Impostores?</label>
+                    <div style="display: flex; gap: 1rem;">
+                        <button class="radio-option active" onclick="setImpostors(1)" style="flex: 1;">
+                            <span class="radio-label">1 Impostor</span>
+                        </button>
+                        <button class="radio-option" onclick="setImpostors(2)" style="flex: 1;">
+                            <span class="radio-label">2 Impostores</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <label class="form-label">Adicionar Jogadores</label>
+                    <div class="input-group">
+                        <input type="text" id="playerInput" class="text-input" placeholder="Nome do jogador..."
+                            onkeypress="handlePlayerKeyPress(event)">
+                        <button class="btn-add" onclick="addPlayer()">
+                            <svg class="svg-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <div id="playersList" class="player-list"></div>
+                    <div class="player-count">Total de jogadores: <strong id="playerCount">0</strong></div>
+                </div>
+
+                <button class="btn-start" id="startBtn" onclick="startGame()" disabled>
+                    <svg class="svg-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                        fill="currentColor">
+                        <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                    </svg>
+                    Iniciar Jogo
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tela de Revelação de Palavra -->
+    <div id="revealScreen" class="screen reveal-screen">
+        <div class="reveal-card" id="revealCard"></div>
+    </div>
+
+    <!-- Tela de Jogo -->
+    <div id="gameScreen" class="screen">
+        <button class="btn-back" onclick="endGame()">← Menu</button>
+        <div class="content">
+            <div class="container">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <h2 class="title" style="margin-bottom: 0;">Jogo em Andamento</h2>
+                    <button class="btn-back" onclick="restartGame()"
+                        style="position: static; margin-bottom: 0; background: #4a5a9e;">↻ Reiniciar</button>
+                </div>
+
+                <div class="game-header">
+                    <div class="header-item">
+                        <div class="header-label">Rodada</div>
+                        <div class="header-value" id="roundDisplay">1</div>
+                    </div>
+                    <div class="header-item">
+                        <div class="header-label">Impostores</div>
+                        <div class="header-value" id="impostorCount">1</div>
+                    </div>
+                    <div class="header-item">
+                        <div class="header-label">Jogadores</div>
+                        <div class="header-value" id="playerCountDisplay">0</div>
+                    </div>
+                </div>
+
+                <div class="player-turn-card">
+                    <div class="turn-label">Próximo Jogador</div>
+                    <div class="turn-name" id="nextPlayerName">--</div>
+                    <button class="btn-continue" onclick="showRevealScreen()">Ver Sua Pergunta/Palavra</button>
+                </div>
+
+                <div>
+                    <h3 class="section-title">Todos os Jogadores</h3>
+                    <div class="players-grid" id="playersGrid"></div>
+                </div>
+
+                <div class="voting-section">
+                    <h3 class="section-title">Votação - Quem é o Impostor?</h3>
+                    <div id="correctQuestionSection" style="display: none; background: rgba(91,107,175,0.15); padding: 1rem; border-radius: 0.75rem; margin-bottom: 1rem; border: 1px solid rgba(91,107,175,0.3);">
+                        <div style="color: #dbeafe; font-size: 0.875rem; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em;">Pergunta Correta (da maioria):</div>
+                        <div style="font-size: 1.1rem; color: #e8a87c; font-weight: 600;">"<span id="correctQuestionDisplay"></span>"</div>
+                    </div>
+                    <div class="voting-grid" id="votingGrid"></div>
+
+                    <div class="action-buttons">
+                        <button class="btn-action btn-next" id="nextBtn" onclick="nextPlayer()">Próximo Jogador</button>
+                        <button class="btn-action btn-eliminate" onclick="eliminatePlayer()">Eliminar</button>
+                    </div>
+                </div>
+
+                <button id="revealQuestionBtn" class="btn-finish" onclick="revealCorrectQuestion()" style="display: none; margin-bottom: 1rem; background: #8b9fd4;">
+                    🔍 Revelar Pergunta Correta
+                </button>
+
+                <button class="btn-finish" onclick="finishRound()">Finalizar Rodada</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Temas com 50 palavras, dicas e 20 perguntas
+        const themes = {
+            comida: {
+                name: 'Comida 🍔',
+                emoji: '🍔',
+                questions: [
+                    'Qual é sua comida favorita?',
+                    'O que você gosta de comer no café da manhã?',
+                    'Qual é sua bebida preferida?',
+                    'Você prefere comida doce ou salgada?',
+                    'Qual é sua sobremesa favorita?',
+                    'O que você mais gosta de comer em um restaurante?',
+                    'Qual fruta você mais gosta?',
+                    'Você prefere comida rápida ou caseira?',
+                    'Qual é seu prato mais fácil de preparar?',
+                    'Você gosta mais de carne ou peixe?',
+                    'Qual é seu tempero favorito?',
+                    'Você come algo específico no final de semana?',
+                    'Qual comida você nunca comeria?',
+                    'O que você pede em um fast food?',
+                    'Você prefere café da manhã doce ou salgado?',
+                    'Qual é a comida que mais lhe traz memórias boas?',
+                    'Você gosta de cozinhar ou prefere que façam para você?',
+                    'Qual é sua pizza favorita?',
+                    'Você prefere comida quente ou fria?',
+                    'Qual é a comida que você comeria todo dia sem se cansar?'
+                ],
+                words: [
+                    { word: 'Pizza', hint: 'queijo' },
+                    { word: 'Hamburger', hint: 'carne' },
+                    { word: 'Sushi', hint: 'peixe' },
+                    { word: 'Macarrão', hint: 'massa' },
+                    { word: 'Arroz', hint: 'grão' },
+                    { word: 'Feijão', hint: 'legume' },
+                    { word: 'Frango', hint: 'ave' },
+                    { word: 'Bife', hint: 'carne' },
+                    { word: 'Peixe', hint: 'mar' },
+                    { word: 'Salada', hint: 'verdura' },
+                    { word: 'Sopa', hint: 'líquido' },
+                    { word: 'Pão', hint: 'massa' },
+                    { word: 'Bolo', hint: 'doce' },
+                    { word: 'Biscoito', hint: 'crocante' },
+                    { word: 'Sorvete', hint: 'gelado' },
+                    { word: 'Chocolate', hint: 'cacau' },
+                    { word: 'Açúcar', hint: 'doce' },
+                    { word: 'Leite', hint: 'bebida' },
+                    { word: 'Queijo', hint: 'laticínio' },
+                    { word: 'Manteiga', hint: 'gordura' },
+                    { word: 'Ovo', hint: 'galinha' },
+                    { word: 'Mel', hint: 'abelha' },
+                    { word: 'Sal', hint: 'tempero' },
+                    { word: 'Pimenta', hint: 'ardido' },
+                    { word: 'Alho', hint: 'tempero' },
+                    { word: 'Cebola', hint: 'camadas' },
+                    { word: 'Tomate', hint: 'vermelho' },
+                    { word: 'Alface', hint: 'folha' },
+                    { word: 'Cenoura', hint: 'raiz' },
+                    { word: 'Batata', hint: 'tubérculo' },
+                    { word: 'Milho', hint: 'espiga' },
+                    { word: 'Maçã', hint: 'fruta' },
+                    { word: 'Banana', hint: 'amarelo' },
+                    { word: 'Laranja', hint: 'cítrico' },
+                    { word: 'Morango', hint: 'pequeno' },
+                    { word: 'Melancia', hint: 'grande' },
+                    { word: 'Abacaxi', hint: 'tropical' },
+                    { word: 'Uva', hint: 'cacho' },
+                    { word: 'Limão', hint: 'azedo' },
+                    { word: 'Café', hint: 'amargo' },
+                    { word: 'Chá', hint: 'folha' },
+                    { word: 'Suco', hint: 'fruta' },
+                    { word: 'Refrigerante', hint: 'gás' },
+                    { word: 'Cerveja', hint: 'álcool' },
+                    { word: 'Vinho', hint: 'uva' },
+                    { word: 'Água', hint: 'líquido' },
+                    { word: 'Azeite', hint: 'óleo' },
+                    { word: 'Molho', hint: 'tempero' },
+                    { word: 'Doce', hint: 'açúcar' }
+                ]
+            },
+
+            objetos: {
+                name: 'Objetos 📦',
+                emoji: '📦',
+                questions: [
+                    'Qual é seu objeto favorito?',
+                    'Qual é o objeto que você mais usa no dia a dia?',
+                    'Qual objeto você não sairia de casa sem levar?',
+                    'Qual é o objeto mais importante da sua casa?',
+                    'Qual objeto você usou hoje?',
+                    'Qual é o objeto que mais durou com você?',
+                    'Qual objeto você gostaria de ter?',
+                    'Qual objeto você usa para dormir?',
+                    'Qual é seu objeto de trabalho favorito?',
+                    'Qual objeto te ajuda a relaxar?',
+                    'Qual é o objeto que você limparia primeiro em uma enchente?',
+                    'Qual objeto você não conseguiria viver sem?',
+                    'Qual é o objeto que você mais perde?',
+                    'Qual objeto você reganharia se perdesse?',
+                    'Qual é o objeto que mais atrapalha sua casa?',
+                    'Qual é o objeto que você mais procura?',
+                    'Qual objeto você gostaria de ter em ouro?',
+                    'Qual é o objeto que você carrega na bolsa/mochila?',
+                    'Qual é o objeto que você gostaria de herdar?',
+                    'Qual objeto define você?'
+                ],
+                words: [
+                    { word: 'Cadeira', hint: 'sentar' },
+                    { word: 'Mesa', hint: 'tampo' },
+                    { word: 'Cama', hint: 'dormir' },
+                    { word: 'Guarda-roupa', hint: 'roupa' },
+                    { word: 'Sofá', hint: 'conforto' },
+                    { word: 'Tapete', hint: 'chão' },
+                    { word: 'Espelho', hint: 'reflexo' },
+                    { word: 'Lâmpada', hint: 'luz' },
+                    { word: 'Relógio', hint: 'tempo' },
+                    { word: 'Telefone', hint: 'ligação' },
+                    { word: 'Computador', hint: 'máquina' },
+                    { word: 'Mouse', hint: 'cursor' },
+                    { word: 'Teclado', hint: 'letras' },
+                    { word: 'Pneu', hint: 'roda' },
+                    { word: 'Carro', hint: 'veículo' },
+                    { word: 'Bicicleta', hint: 'pedal' },
+                    { word: 'Moto', hint: 'motor' },
+                    { word: 'Ônibus', hint: 'transporte' },
+                    { word: 'Trem', hint: 'trilho' },
+                    { word: 'Avião', hint: 'voo' },
+                    { word: 'Livro', hint: 'leitura' },
+                    { word: 'Jornal', hint: 'notícia' },
+                    { word: 'Revista', hint: 'edição' },
+                    { word: 'Caderno', hint: 'anotar' },
+                    { word: 'Lápis', hint: 'grafite' },
+                    { word: 'Caneta', hint: 'tinta' },
+                    { word: 'Borracha', hint: 'apagar' },
+                    { word: 'Tesoura', hint: 'corte' },
+                    { word: 'Faca', hint: 'corte' },
+                    { word: 'Garfo', hint: 'dentes' },
+                    { word: 'Colher', hint: 'servir' },
+                    { word: 'Prato', hint: 'comida' },
+                    { word: 'Copo', hint: 'bebida' },
+                    { word: 'Panela', hint: 'cozinhar' },
+                    { word: 'Fogão', hint: 'calor' },
+                    { word: 'Geladeira', hint: 'frio' },
+                    { word: 'Forno', hint: 'assar' },
+                    { word: 'Televisão', hint: 'vídeo' },
+                    { word: 'Rádio', hint: 'som' },
+                    { word: 'Câmera', hint: 'foto' },
+                    { word: 'Chave', hint: 'abrir' },
+                    { word: 'Cadeado', hint: 'travar' },
+                    { word: 'Porta', hint: 'entrada' },
+                    { word: 'Janela', hint: 'luz' },
+                    { word: 'Escada', hint: 'subir' },
+                    { word: 'Cerca', hint: 'limite' },
+                    { word: 'Parede', hint: 'divisão' },
+                    { word: 'Teto', hint: 'cobertura' },
+                    { word: 'Piso', hint: 'chão' }
+                ]
+            },
+
+            famosos: {
+                name: 'Celebridades 🌟',
+                emoji: '🌟',
+                questions: [
+                    'Qual famoso você mais admira?',
+                    'Qual ator seu gostaria de assistir sempre?',
+                    'Qual cantor você mais ouve?',
+                    'Qual famoso você gostaria de conhecer?',
+                    'Qual é o famoso mais parecido com você?',
+                    'Qual famoso você seguiria em uma rede social?',
+                    'Qual é seu filme favorito de qual famoso?',
+                    'Qual famoso você gostaria de ser por um dia?',
+                    'Qual é a música favorita de qual famoso?',
+                    'Qual famoso você convidaria para jantar?',
+                    'Qual é o famoso que você menos gosta?',
+                    'Qual famoso você defende em discussões?',
+                    'Qual famoso você acha que envelheceu bem?',
+                    'Qual famoso você gostaria de entrevistar?',
+                    'Qual é o casal de famosos que você mais gosta?',
+                    'Qual famoso você acharia chato de conhecer pessoalmente?',
+                    'Qual famoso você gostaria que interpretasse você em um filme?',
+                    'Qual é o famoso que você mais segue nas notícias?',
+                    'Qual famoso você gostaria de ter como amigo?',
+                    'Qual é o famoso que você gostaria de trocar de vida?'
+                ],
+                words: [
+                    { word: 'Cristiano Ronaldo', hint: 'futebol' },
+                    { word: 'Lionel Messi', hint: 'futebol' },
+                    { word: 'Neymar', hint: 'futebol' },
+                    { word: 'Tom Cruise', hint: 'ação' },
+                    { word: 'Johnny Depp', hint: 'ator' },
+                    { word: 'Leonardo DiCaprio', hint: 'Titanic' },
+                    { word: 'Brad Pitt', hint: 'ator' },
+                    { word: 'Will Smith', hint: 'ator' },
+                    { word: 'Nicolas Cage', hint: 'ator' },
+                    { word: 'Arnold Schwarzenegger', hint: 'ator' },
+                    { word: 'Sylvester Stallone', hint: 'Rocky' },
+                    { word: 'Jean-Claude Van Damme', hint: 'luta' },
+                    { word: 'Bruce Willis', hint: 'ação' },
+                    { word: 'Jackie Chan', hint: 'luta' },
+                    { word: 'Keanu Reeves', hint: 'Matrix' },
+                    { word: 'Tom Hanks', hint: 'drama' },
+                    { word: 'Steven Spielberg', hint: 'diretor' },
+                    { word: 'Quentin Tarantino', hint: 'violência' },
+                    { word: 'Meryl Streep', hint: 'atriz' },
+                    { word: 'Julia Roberts', hint: 'atriz' },
+                    { word: 'Angelina Jolie', hint: 'atriz' },
+                    { word: 'Lady Gaga', hint: 'cantora' },
+                    { word: 'Taylor Swift', hint: 'pop' },
+                    { word: 'Beyoncé', hint: 'cantora' },
+                    { word: 'Shakira', hint: 'cantora' },
+                    { word: 'Rihanna', hint: 'cantora' },
+                    { word: 'Ariana Grande', hint: 'pop' },
+                    { word: 'The Weeknd', hint: 'cantor' },
+                    { word: 'Ed Sheeran', hint: 'cantor' },
+                    { word: 'Justin Bieber', hint: 'cantor' },
+                    { word: 'Drake', hint: 'rapper' },
+                    { word: 'Eminem', hint: 'rapper' },
+                    { word: 'Kanye West', hint: 'rapper' },
+                    { word: 'Jay-Z', hint: 'rapper' },
+                    { word: 'Tupac', hint: 'rapper' },
+                    { word: 'Elon Musk', hint: 'tecnologia' },
+                    { word: 'Bill Gates', hint: 'Microsoft' },
+                    { word: 'Steve Jobs', hint: 'Apple' },
+                    { word: 'Oprah Winfrey', hint: 'tv' },
+                    { word: 'Ellen DeGeneres', hint: 'tv' },
+                    { word: 'Jimmy Fallon', hint: 'tv' },
+                    { word: 'David Letterman', hint: 'tv' },
+                    { word: 'Pelé', hint: 'futebol' },
+                    { word: 'Maradona', hint: 'futebol' },
+                    { word: 'Zinedine Zidane', hint: 'futebol' },
+                    { word: 'Ronaldinho', hint: 'futebol' },
+                    { word: 'Ronaldo', hint: 'futebol' },
+                    { word: 'Gisele Bündchen', hint: 'modelo' },
+                    { word: 'Naomi Campbell', hint: 'modelo' }
+                ]
+            },
+
+            animais: {
+                name: 'Animais 🐾',
+                emoji: '🐾',
+                questions: [
+                    'Qual é seu animal favorito?',
+                    'Qual animal você gostaria de ter como pet?',
+                    'Qual animal você mais respeita?',
+                    'Qual animal você menos gosta?',
+                    'Qual animal você acha mais bonito?',
+                    'Qual animal você gostaria de ser?',
+                    'Qual animal você acha mais inteligente?',
+                    'Qual animal você teria medo de encontrar?',
+                    'Qual animal você acha mais fofo?',
+                    'Qual animal você vê com frequência?',
+                    'Qual animal você gostaria de ver no zoológico?',
+                    'Qual animal representa você?',
+                    'Qual animal você acha mais forte?',
+                    'Qual animal você acha mais rápido?',
+                    'Qual animal você teria como mascote da sua casa?',
+                    'Qual animal você gostaria de domesticar?',
+                    'Qual animal você acha mais exótico?',
+                    'Qual animal você defende na natureza?',
+                    'Qual animal você acha mais divertido?',
+                    'Qual animal você gostaria de aprender a se mover como?'
+                ],
+                words: [
+                    { word: 'Leão', hint: 'felino' },
+                    { word: 'Tigre', hint: 'listras' },
+                    { word: 'Elefante', hint: 'tromba' },
+                    { word: 'Girafa', hint: 'pescoço' },
+                    { word: 'Zebra', hint: 'listras' },
+                    { word: 'Hiena', hint: 'risada' },
+                    { word: 'Antílope', hint: 'chifre' },
+                    { word: 'Búfalo', hint: 'chifre' },
+                    { word: 'Avestruz', hint: 'corrida' },
+                    { word: 'Flamingo', hint: 'rosa' },
+                    { word: 'Águia', hint: 'voo' },
+                    { word: 'Coruja', hint: 'noite' },
+                    { word: 'Pinguim', hint: 'gelo' },
+                    { word: 'Papagaio', hint: 'fala' },
+                    { word: 'Abelha', hint: 'mel' },
+                    { word: 'Borboleta', hint: 'asas' },
+                    { word: 'Aranha', hint: 'teia' },
+                    { word: 'Escorpião', hint: 'veneno' },
+                    { word: 'Barata', hint: 'praga' },
+                    { word: 'Gafanhoto', hint: 'salto' },
+                    { word: 'Formiga', hint: 'colônia' },
+                    { word: 'Grilo', hint: 'som' },
+                    { word: 'Louva-a-deus', hint: 'predador' },
+                    { word: 'Sapo', hint: 'coaxo' },
+                    { word: 'Rã', hint: 'salto' },
+                    { word: 'Cobra', hint: 'veneno' },
+                    { word: 'Jacaré', hint: 'dentes' },
+                    { word: 'Tartaruga', hint: 'casco' },
+                    { word: 'Lagarto', hint: 'cauda' },
+                    { word: 'Tubarão', hint: 'predador' },
+                    { word: 'Golfinho', hint: 'inteligente' },
+                    { word: 'Baleia', hint: 'gigante' },
+                    { word: 'Peixe-palhaço', hint: 'coral' },
+                    { word: 'Polvo', hint: 'tentáculos' },
+                    { word: 'Lula', hint: 'mar' },
+                    { word: 'Caranguejo', hint: 'lateral' },
+                    { word: 'Lagosta', hint: 'pinça' },
+                    { word: 'Camarão', hint: 'pequeno' },
+                    { word: 'Cachorro', hint: 'amigo' },
+                    { word: 'Gato', hint: 'independente' },
+                    { word: 'Cavalo', hint: 'corrida' },
+                    { word: 'Vaca', hint: 'leite' },
+                    { word: 'Porco', hint: 'lama' },
+                    { word: 'Galinha', hint: 'ovo' },
+                    { word: 'Pato', hint: 'água' },
+                    { word: 'Ganso', hint: 'ave' },
+                    { word: 'Ovelha', hint: 'lã' },
+                    { word: 'Cabra', hint: 'chifre' },
+                    { word: 'Mula', hint: 'híbrido' }
+                ]
+            },
+
+            filmes: {
+                name: 'Filmes 🎬',
+                emoji: '🎬',
+                questions: [
+                    'Qual é seu filme favorito?',
+                    'Qual filme você assiste várias vezes?',
+                    'Qual filme te fez chorar?',
+                    'Qual é o filme mais recente que você assistiu?',
+                    'Qual filme você recomenda para todos?',
+                    'Qual é o filme que mais marcou você?',
+                    'Qual filme você gostaria de reviver?',
+                    'Qual é o seu gênero de filme favorito?',
+                    'Qual filme você assiste na chuva?',
+                    'Qual filme te dá vontade de viajar?',
+                    'Qual é a cena de filme que mais te marcou?',
+                    'Qual filme você quer que façam um remake?',
+                    'Qual é o filme que você odeia que todos gostam?',
+                    'Qual filme você gostaria que fosse real?',
+                    'Qual é o filme que você levaria para uma ilha deserta?',
+                    'Qual filme você gostaria de viver?',
+                    'Qual é o filme que mais faz você rir?',
+                    'Qual filme você gostaria de ter feito?',
+                    'Qual é o filme que você mostraria para alguém descobrir cinema?',
+                    'Qual filme você assiste quando quer relaxar?'
+                ],
+                words: [
+                    { word: 'Avatar', hint: 'azul' },
+                    { word: 'Titanic', hint: 'navio' },
+                    { word: 'Jurassic Park', hint: 'dinossauro' },
+                    { word: 'Matrix', hint: 'simulação' },
+                    { word: 'Star Wars', hint: 'espaço' },
+                    { word: 'Harry Potter', hint: 'magia' },
+                    { word: 'Vingadores', hint: 'heróis' },
+                    { word: 'Homem de Ferro', hint: 'armadura' },
+                    { word: 'Capitão América', hint: 'escudo' },
+                    { word: 'Thor', hint: 'martelo' },
+                    { word: 'Homem-Aranha', hint: 'teia' },
+                    { word: 'Pantera Negra', hint: 'Wakanda' },
+                    { word: 'Homem-Formiga', hint: 'tamanho' },
+                    { word: 'Doutor Estranho', hint: 'magia' },
+                    { word: 'Gavião Arqueiro', hint: 'arco' },
+                    { word: 'Viúva Negra', hint: 'espiã' },
+                    { word: 'Batman', hint: 'morcego' },
+                    { word: 'Superman', hint: 'Krypton' },
+                    { word: 'Mulher Maravilha', hint: 'amazona' },
+                    { word: 'Homem de Ouro', hint: '007' },
+                    { word: 'Senhor dos Anéis', hint: 'anel' },
+                    { word: 'Hobbit', hint: 'fantasia' },
+                    { word: 'Piratas do Caribe', hint: 'pirata' },
+                    { word: 'Homem de Ferro 3', hint: 'armadura' },
+                    { word: 'Duro de Matar', hint: 'ação' },
+                    { word: 'Missão Impossível', hint: 'missão' },
+                    { word: 'Gladiador', hint: 'Roma' },
+                    { word: 'Braveheart', hint: 'guerra' },
+                    { word: 'Salve o Soldado Ryan', hint: 'guerra' },
+                    { word: 'A Lista de Schindler', hint: 'holocausto' },
+                    { word: 'Forrest Gump', hint: 'vida' },
+                    { word: 'Pulp Fiction', hint: 'crime' },
+                    { word: 'Clube da Luta', hint: 'luta' },
+                    { word: 'Cidade de Deus', hint: 'favela' },
+                    { word: 'Central do Brasil', hint: 'viagem' },
+                    { word: 'Tropa de Elite', hint: 'polícia' },
+                    { word: 'Se eu Fosse Você', hint: 'troca' },
+                    { word: 'Eu Sou Lenda', hint: 'vírus' },
+                    { word: 'Interestelar', hint: 'espaço' },
+                    { word: 'Inception', hint: 'sonho' },
+                    { word: 'O Iluminado', hint: 'hotel' },
+                    { word: 'Psicose', hint: 'terror' },
+                    { word: 'Silêncio dos Inocentes', hint: 'serial' },
+                    { word: 'Garota de Ouro', hint: 'boxe' },
+                    { word: 'Rocky', hint: 'boxe' },
+                    { word: 'Rambó', hint: 'guerra' },
+                    { word: 'Predador', hint: 'alien' },
+                    { word: 'Alien', hint: 'xenomorfo' }
+                ]
+            }
+        };
+
+        // Game State
+        let gameState = {
+            selectedTheme: null,
+            selectedMode: null,
+            players: [],
+            word: '',
+            numImpostors: 1,
+            currentPlayerIndex: 0,
+            round: 0,
+            revealedPlayers: {},
+            selectedForElimination: null,
+            playerWords: {},
+            usedQuestions: []
+        };
+
+        // Navigation
+        function goToMenu() {
+            document.getElementById('menuScreen').classList.add('active');
+            document.getElementById('themesScreen').classList.remove('active');
+            document.getElementById('modeScreen').classList.remove('active');
+            document.getElementById('setupScreen').classList.remove('active');
+            document.getElementById('revealScreen').classList.remove('active');
+            document.getElementById('gameScreen').classList.remove('active');
+        }
+
+        function goToThemes() {
+            document.getElementById('menuScreen').classList.remove('active');
+            document.getElementById('themesScreen').classList.add('active');
+            renderThemes();
+        }
+
+        function goToMode(theme) {
+            gameState.selectedTheme = theme;
+            document.getElementById('themesScreen').classList.remove('active');
+            document.getElementById('modeScreen').classList.add('active');
+        }
+
+        function selectMode(mode) {
+            gameState.selectedMode = mode;
+            document.querySelector(`input[value="${mode}"]`).checked = true;
+            document.querySelectorAll('.radio-option').forEach((opt, idx) => {
+                opt.classList.toggle('active', (idx === 0 && mode === 'blind') || (idx === 1 && mode === 'aware') || (idx === 2 && mode === 'question'));
+            });
+        }
+
+        function goToSetup() {
+            document.getElementById('modeScreen').classList.remove('active');
+            document.getElementById('setupScreen').classList.add('active');
+            document.getElementById('playerInput').focus();
+        }
+
+        function goToGame() {
+            document.getElementById('setupScreen').classList.remove('active');
+            document.getElementById('gameScreen').classList.add('active');
+        }
+
+        function renderThemes() {
+            const grid = document.getElementById('themesGrid');
+            grid.innerHTML = Object.entries(themes).map(([key, theme]) => `
+                <div class="card" onclick="goToMode('${key}')">
+                    <div class="card-emoji">${theme.emoji}</div>
+                    <div class="card-title">${theme.name}</div>
+                    <div class="card-count">50 palavras</div>
+                </div>
+            `).join('');
+        }
+
+        // Setup Functions
+        function setImpostors(num) {
+            gameState.numImpostors = num;
+            document.querySelectorAll('.radio-option').forEach((btn, idx) => {
+                btn.classList.toggle('active', idx === num - 1);
+            });
+        }
+
+        function addPlayer() {
+            const input = document.getElementById('playerInput');
+            const name = input.value.trim();
+            if (name) {
+                gameState.players.push({
+                    id: Date.now(),
+                    name: name,
+                    isImpostor: false,
+                    participated: false
+                });
+                input.value = '';
+                renderPlayers();
+                updateStartButton();
+            }
+        }
+
+        function handlePlayerKeyPress(event) {
+            if (event.key === 'Enter') {
+                addPlayer();
+            }
+        }
+
+        function removePlayer(id) {
+            gameState.players = gameState.players.filter(p => p.id !== id);
+            renderPlayers();
+            updateStartButton();
+        }
+
+        function renderPlayers() {
+            const list = document.getElementById('playersList');
+            list.innerHTML = gameState.players.map(p => `
+                <div class="player-item">
+                    <span class="player-name">${p.name}</span>
+                    <button class="btn-delete" onclick="removePlayer(${p.id})">✕</button>
+                </div>
+            `).join('');
+            document.getElementById('playerCount').textContent = gameState.players.length;
+        }
+
+        function updateStartButton() {
+            const btn = document.getElementById('startBtn');
+            btn.disabled = gameState.players.length < 2;
+        }
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function pickRandomIds(players, count) {
+            const ids = players.map(player => player.id);
+            for (let i = ids.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [ids[i], ids[j]] = [ids[j], ids[i]];
+            }
+            return ids.slice(0, Math.min(count, ids.length));
+        }
+
+        function getRandomQuestion(themeData) {
+            const questions = themeData.questions;
+            return questions[Math.floor(Math.random() * questions.length)];
+        }
+
+        function startGame() {
+            if (gameState.players.length < 2) {
+                alert('Mínimo 2 jogadores necessário!');
+                return;
+            }
+
+            const themeData = themes[gameState.selectedTheme];
+
+            const playersCopy = shuffleArray(gameState.players.map(p => ({ ...p })));
+            const impostorIds = pickRandomIds(playersCopy, gameState.numImpostors);
+
+            gameState.players = playersCopy.map(p => ({
+                ...p,
+                isImpostor: impostorIds.includes(p.id),
+                participated: false
+            }));
+
+            gameState.currentPlayerIndex = 0;
+            gameState.round = 1;
+            gameState.revealedPlayers = {};
+            gameState.selectedForElimination = null;
+            gameState.playerWords = {};
+            gameState.usedQuestions = [];
+
+            // Assign words ou perguntas
+            if (gameState.selectedMode === 'question') {
+                const mainQuestion = getRandomQuestion(themeData);
+                const impostorQuestion = getRandomQuestion(themeData);
+                
+                gameState.players.forEach(player => {
+                    if (player.isImpostor) {
+                        gameState.playerWords[player.id] = {
+                            question: impostorQuestion,
+                            isQuestion: true,
+                            isImpostor: true,
+                            knowsImpostor: false
+                        };
+                    } else {
+                        gameState.playerWords[player.id] = {
+                            question: mainQuestion,
+                            isQuestion: true,
+                            isImpostor: false,
+                            knowsImpostor: false
+                        };
+                    }
+                });
+                gameState.usedQuestions.push(mainQuestion, impostorQuestion);
+            } else {
+                const mainWordObj = themeData.words[Math.floor(Math.random() * themeData.words.length)];
+                gameState.word = mainWordObj.word;
+
+                gameState.players.forEach(player => {
+                    if (player.isImpostor) {
+                        if (gameState.selectedMode === 'blind') {
+                            const differentWords = themeData.words.filter(w => w.word !== mainWordObj.word);
+                            const differentWord = differentWords[Math.floor(Math.random() * differentWords.length)];
+                            gameState.playerWords[player.id] = {
+                                word: differentWord.word,
+                                hint: null,
+                                isImpostor: true,
+                                knowsImpostor: false
+                            };
+                        } else {
+                            gameState.playerWords[player.id] = {
+                                word: 'IMPOSTOR',
+                                hint: mainWordObj.hint,
+                                isImpostor: true,
+                                knowsImpostor: true
+                            };
+                        }
+                    } else {
+                        gameState.playerWords[player.id] = {
+                            word: mainWordObj.word,
+                            hint: null,
+                            isImpostor: false,
+                            knowsImpostor: false
+                        };
+                    }
+                });
+            }
+
+            renderGame();
+            goToGame();
+        }
+
+        // Game Functions
+        function renderGame() {
+            document.getElementById('roundDisplay').textContent = gameState.round;
+            document.getElementById('impostorCount').textContent = gameState.players.filter(p => p.isImpostor).length;
+            document.getElementById('playerCountDisplay').textContent = gameState.players.length;
+
+            const current = gameState.players[gameState.currentPlayerIndex];
+            document.getElementById('nextPlayerName').textContent = current.name;
+
+            const grid = document.getElementById('playersGrid');
+            grid.innerHTML = gameState.players.map((p, idx) => `
+                <div class="player-card ${idx === gameState.currentPlayerIndex ? 'active' : ''}" onclick="selectPlayer(${idx})">
+                    ${p.name}${p.participated ? ' ✓' : ''}
+                </div>
+            `).join('');
+
+            const votingGrid = document.getElementById('votingGrid');
+            votingGrid.innerHTML = gameState.players.map(p => `
+                <button class="vote-btn ${gameState.selectedForElimination === p.id ? 'selected' : ''}" onclick="selectForElimination(${p.id})">
+                    ${p.name}
+                </button>
+            `).join('');
+
+            // Mostrar botão de revelar pergunta se estiver em modo pergunta
+            const revealBtn = document.getElementById('revealQuestionBtn');
+            const correctQuestionSection = document.getElementById('correctQuestionSection');
+            if (gameState.selectedMode === 'question') {
+                revealBtn.style.display = 'block';
+                correctQuestionSection.style.display = 'none';
+            } else {
+                revealBtn.style.display = 'none';
+                correctQuestionSection.style.display = 'none';
+            }
+
+            updateNextButton();
+        }
+
+        function revealCorrectQuestion() {
+            // Encontra a pergunta que a maioria dos jogadores recebeu (não-impostores)
+            const nonImpostors = gameState.players.filter(p => !p.isImpostor);
+            if (nonImpostors.length > 0) {
+                const correctQuestion = gameState.playerWords[nonImpostors[0].id].question;
+                document.getElementById('correctQuestionDisplay').textContent = correctQuestion;
+                document.getElementById('correctQuestionSection').style.display = 'block';
+                document.getElementById('revealQuestionBtn').style.display = 'none';
+            }
+        }
+
+        function selectPlayer(idx) {
+            gameState.currentPlayerIndex = idx;
+            renderGame();
+        }
+
+        function showRevealScreen() {
+            const current = gameState.players[gameState.currentPlayerIndex];
+            const playerInfo = gameState.playerWords[current.id];
+
+            let content = `
+                <div class="reveal-label">PERGUNTA / PALAVRA SECRETA</div>
+                <div class="player-name-display">${current.name}</div>
+            `;
+
+            if (gameState.selectedMode === 'question') {
+                content += `
+                    <div class="reveal-content">
+                        <div class="question-display">"${playerInfo.question}"</div>
+                    </div>
+                `;
+            } else if (playerInfo.knowsImpostor) {
+                content += `
+                    <div class="impostor-warning">🎭 VOCÊ É O IMPOSTOR!</div>
+                    <div class="reveal-content">
+                        <div class="reveal-title">Sua Dica para descobrir a palavra:</div>
+                        <div class="hint-display">"${playerInfo.hint}"</div>
+                    </div>
+                `;
+            } else {
+                content += `
+                    <div class="reveal-content">
+                        <div class="word-display">${playerInfo.word}</div>
+                    </div>
+                `;
+            }
+
+            content += `<button class="btn-continue" onclick="hideRevealScreen()">Pronto ✓</button>`;
+
+            document.getElementById('revealCard').innerHTML = content;
+            document.getElementById('revealScreen').classList.add('active');
+            document.getElementById('gameScreen').classList.remove('active');
+
+            current.participated = true;
+        }
+
+        function hideRevealScreen() {
+            document.getElementById('revealScreen').classList.remove('active');
+            document.getElementById('gameScreen').classList.add('active');
+            renderGame();
+        }
+
+        function selectForElimination(playerId) {
+            gameState.selectedForElimination = gameState.selectedForElimination === playerId ? null : playerId;
+            renderGame();
+        }
+
+        function nextPlayer() {
+            if (gameState.currentPlayerIndex < gameState.players.length - 1) {
+                gameState.currentPlayerIndex++;
+                renderGame();
+            }
+        }
+
+        function updateNextButton() {
+            const btn = document.getElementById('nextBtn');
+            btn.disabled = gameState.currentPlayerIndex === gameState.players.length - 1;
+        }
+
+        function eliminatePlayer() {
+            if (!gameState.selectedForElimination) {
+                alert('Selecione um jogador para eliminar!');
+                return;
+            }
+
+            const player = gameState.players.find(p => p.id === gameState.selectedForElimination);
+            if (player) {
+                if (player.isImpostor) {
+                    alert(`🎉 Parabéns! Vocês acertaram! ${player.name} era o(a) Impostor(a)!`);
+                } else {
+                    alert(`❌ Errado! ${player.name} era inocente. Continue procurando!`);
+                }
+                gameState.players = gameState.players.filter(p => p.id !== gameState.selectedForElimination);
+                gameState.selectedForElimination = null;
+                renderGame();
+            }
+        }
+
+        function finishRound() {
+            if (gameState.players.length > 1) {
+                gameState.round++;
+                gameState.currentPlayerIndex = 0;
+                gameState.players.forEach(p => p.participated = false);
+                gameState.selectedForElimination = null;
+                renderGame();
+            } else {
+                alert('Jogo Terminado!');
+                endGame();
+            }
+        }
+
+        function restartGame() {
+            if (confirm('Deseja reiniciar o jogo com os mesmos jogadores?')) {
+                const themeData = themes[gameState.selectedTheme];
+
+                const playersCopy = shuffleArray(gameState.players.map(p => ({ ...p })));
+                const impostorIds = pickRandomIds(playersCopy, gameState.numImpostors);
+
+                gameState.players = playersCopy.map(p => ({
+                    ...p,
+                    isImpostor: impostorIds.includes(p.id),
+                    participated: false
+                }));
+
+                gameState.currentPlayerIndex = 0;
+                gameState.round = 1;
+                gameState.revealedPlayers = {};
+                gameState.selectedForElimination = null;
+                gameState.playerWords = {};
+                gameState.usedQuestions = [];
+
+                if (gameState.selectedMode === 'question') {
+                    const mainQuestion = getRandomQuestion(themeData);
+                    const impostorQuestion = getRandomQuestion(themeData);
+                    
+                    gameState.players.forEach(player => {
+                        if (player.isImpostor) {
+                            gameState.playerWords[player.id] = {
+                                question: impostorQuestion,
+                                isQuestion: true,
+                                isImpostor: true,
+                                knowsImpostor: false
+                            };
+                        } else {
+                            gameState.playerWords[player.id] = {
+                                question: mainQuestion,
+                                isQuestion: true,
+                                isImpostor: false,
+                                knowsImpostor: false
+                            };
+                        }
+                    });
+                } else {
+                    const mainWordObj = themeData.words[Math.floor(Math.random() * themeData.words.length)];
+                    gameState.word = mainWordObj.word;
+
+                    gameState.players.forEach(player => {
+                        if (player.isImpostor) {
+                            if (gameState.selectedMode === 'blind') {
+                                const differentWords = themeData.words.filter(w => w.word !== mainWordObj.word);
+                                const differentWord = differentWords[Math.floor(Math.random() * differentWords.length)];
+                                gameState.playerWords[player.id] = {
+                                    word: differentWord.word,
+                                    hint: null,
+                                    isImpostor: true,
+                                    knowsImpostor: false
+                                };
+                            } else {
+                                gameState.playerWords[player.id] = {
+                                    word: 'IMPOSTOR',
+                                    hint: mainWordObj.hint,
+                                    isImpostor: true,
+                                    knowsImpostor: true
+                                };
+                            }
+                        } else {
+                            gameState.playerWords[player.id] = {
+                                word: mainWordObj.word,
+                                hint: null,
+                                isImpostor: false,
+                                knowsImpostor: false
+                            };
+                        }
+                    });
+                }
+
+                renderGame();
+            }
+        }
+
+        function endGame() {
+            goToMenu();
+        }
+    </script>
+</body>
+
+</html>
